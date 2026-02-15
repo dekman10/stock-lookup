@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Lookup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Consolas, monospace;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { color: #00bcd4; text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem; }
+    .forms { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem; }
+    .form-card {
+      flex: 1; min-width: 250px;
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      padding: 1.2rem;
+    }
+    .form-card h2 { color: #00bcd4; font-size: 1rem; margin-bottom: 0.8rem; }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.5rem 0.7rem;
+      margin-bottom: 0.6rem;
+      background: #0f3460;
+      border: 1px solid #1a1a5e;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+    input[type="text"]::placeholder { color: #666; text-transform: none; }
+    button {
+      width: 100%;
+      padding: 0.5rem;
+      background: #00bcd4;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    button:hover { background: #00e5ff; }
+    .error {
+      background: #3e1620;
+      border: 1px solid #f44336;
+      color: #ff8a80;
+      padding: 0.8rem 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+    }
+    .stock-card {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .stock-card h2 {
+      color: #00bcd4;
+      font-size: 1.3rem;
+      border-bottom: 1px solid #0f3460;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1.5rem; }
+    .info-row { display: flex; justify-content: space-between; padding: 0.3rem 0; }
+    .info-label { color: #888; }
+    .info-value { font-weight: bold; }
+    .positive { color: #4caf50; }
+    .negative { color: #f44336; }
+    .highlight { color: #fff; font-weight: bold; }
+    .section-title {
+      color: #ffc107;
+      font-weight: bold;
+      margin-top: 1rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid #0f3460;
+      margin-bottom: 0.5rem;
+    }
+    /* Comparison table */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+    .compare-table th, .compare-table td {
+      padding: 0.5rem 0.8rem;
+      text-align: right;
+    }
+    .compare-table th:first-child, .compare-table td:first-child { text-align: left; }
+    .compare-table thead th {
+      color: #00bcd4;
+      font-size: 1.05rem;
+      border-bottom: 2px solid #0f3460;
+    }
+    .compare-table tbody tr { border-bottom: 1px solid #0f3460; }
+    .compare-table .label { color: #888; }
+    .compare-table .section-row td {
+      color: #ffc107;
+      font-weight: bold;
+      padding-top: 1rem;
+      border-bottom: 1px solid #0f3460;
+    }
+    @media (max-width: 500px) {
+      .info-grid { grid-template-columns: 1fr; }
+      .forms { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Stock Lookup</h1>
+
+    <div class="forms">
+      <div class="form-card">
+        <h2>Look Up a Stock</h2>
+        <form action="/lookup" method="post">
+          <input type="text" name="ticker" placeholder="Ticker (e.g. AAPL)" required>
+          <button type="submit">Look Up</button>
+        </form>
+      </div>
+      <div class="form-card">
+        <h2>Compare Two Stocks</h2>
+        <form action="/compare" method="post">
+          <input type="text" name="ticker1" placeholder="Ticker 1 (e.g. TSLA)" required>
+          <input type="text" name="ticker2" placeholder="Ticker 2 (e.g. GOOGL)" required>
+          <button type="submit">Compare</button>
+        </form>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if stock %}
+    <div class="stock-card">
+      <h2>{{ stock.name }} ({{ stock.ticker }})</h2>
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="info-label">Current Price</span>
+          <span class="info-value highlight">{{ stock.current_price_fmt }} {{ stock.currency }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Daily Change</span>
+          <span class="info-value {% if stock.change_positive == true %}positive{% elif stock.change_positive == false %}negative{% endif %}">{{ stock.change }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Previous Close</span>
+          <span class="info-value">{{ stock.previous_close_fmt }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Market Cap</span>
+          <span class="info-value highlight">{{ stock.market_cap }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">52-Week High</span>
+          <span class="info-value positive">{{ stock.high_52 }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">52-Week Low</span>
+          <span class="info-value negative">{{ stock.low_52 }}</span>
+        </div>
+      </div>
+
+      <div class="section-title">Analyst Ratings</div>
+      {% if stock.recommendation or stock.target_mean != "N/A" %}
+      <div class="info-grid">
+        {% if stock.recommendation %}
+        <div class="info-row">
+          <span class="info-label">Consensus</span>
+          <span class="info-value {% if 'BUY' in stock.recommendation %}positive{% elif 'SELL' in stock.recommendation or 'UNDER' in stock.recommendation %}negative{% else %}highlight{% endif %}">{{ stock.recommendation }}</span>
+        </div>
+        {% endif %}
+        {% if stock.target_mean != "N/A" %}
+        <div class="info-row">
+          <span class="info-label">Price Target Avg</span>
+          <span class="info-value" style="color: #00bcd4;">{{ stock.target_mean }}</span>
+        </div>
+        {% endif %}
+        {% if stock.target_low != "N/A" %}
+        <div class="info-row">
+          <span class="info-label">Price Target Low</span>
+          <span class="info-value">{{ stock.target_low }}</span>
+        </div>
+        {% endif %}
+        {% if stock.target_high != "N/A" %}
+        <div class="info-row">
+          <span class="info-label">Price Target High</span>
+          <span class="info-value">{{ stock.target_high }}</span>
+        </div>
+        {% endif %}
+        {% if stock.num_analysts %}
+        <div class="info-row">
+          <span class="info-label"># of Analysts</span>
+          <span class="info-value">{{ stock.num_analysts }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% else %}
+      <p style="color: #666;">No analyst ratings available.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if compare %}
+    <div class="stock-card">
+      <h2>Comparison</h2>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>{{ compare[0].name }} ({{ compare[0].ticker }})</th>
+            <th>{{ compare[1].name }} ({{ compare[1].ticker }})</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">Current Price</td>
+            <td class="highlight">{{ compare[0].current_price_fmt }} {{ compare[0].currency }}</td>
+            <td class="highlight">{{ compare[1].current_price_fmt }} {{ compare[1].currency }}</td>
+          </tr>
+          <tr>
+            <td class="label">Daily Change</td>
+            <td class="{% if compare[0].change_positive == true %}positive{% elif compare[0].change_positive == false %}negative{% endif %}">{{ compare[0].change }}</td>
+            <td class="{% if compare[1].change_positive == true %}positive{% elif compare[1].change_positive == false %}negative{% endif %}">{{ compare[1].change }}</td>
+          </tr>
+          <tr>
+            <td class="label">Previous Close</td>
+            <td>{{ compare[0].previous_close_fmt }}</td>
+            <td>{{ compare[1].previous_close_fmt }}</td>
+          </tr>
+          <tr>
+            <td class="label">52-Week High</td>
+            <td class="positive">{{ compare[0].high_52 }}</td>
+            <td class="positive">{{ compare[1].high_52 }}</td>
+          </tr>
+          <tr>
+            <td class="label">52-Week Low</td>
+            <td class="negative">{{ compare[0].low_52 }}</td>
+            <td class="negative">{{ compare[1].low_52 }}</td>
+          </tr>
+          <tr>
+            <td class="label">Market Cap</td>
+            <td class="highlight">{{ compare[0].market_cap }}</td>
+            <td class="highlight">{{ compare[1].market_cap }}</td>
+          </tr>
+          <tr class="section-row"><td colspan="3">Analyst Ratings</td></tr>
+          <tr>
+            <td class="label">Consensus</td>
+            <td class="{% if compare[0].recommendation and 'BUY' in compare[0].recommendation %}positive{% elif compare[0].recommendation and ('SELL' in compare[0].recommendation or 'UNDER' in compare[0].recommendation) %}negative{% else %}highlight{% endif %}">{{ compare[0].recommendation or "N/A" }}</td>
+            <td class="{% if compare[1].recommendation and 'BUY' in compare[1].recommendation %}positive{% elif compare[1].recommendation and ('SELL' in compare[1].recommendation or 'UNDER' in compare[1].recommendation) %}negative{% else %}highlight{% endif %}">{{ compare[1].recommendation or "N/A" }}</td>
+          </tr>
+          <tr>
+            <td class="label">Price Target Avg</td>
+            <td style="color: #00bcd4;">{{ compare[0].target_mean }}</td>
+            <td style="color: #00bcd4;">{{ compare[1].target_mean }}</td>
+          </tr>
+          <tr>
+            <td class="label">Price Target Low</td>
+            <td>{{ compare[0].target_low }}</td>
+            <td>{{ compare[1].target_low }}</td>
+          </tr>
+          <tr>
+            <td class="label">Price Target High</td>
+            <td>{{ compare[0].target_high }}</td>
+            <td>{{ compare[1].target_high }}</td>
+          </tr>
+          <tr>
+            <td class="label"># of Analysts</td>
+            <td>{{ compare[0].num_analysts or "N/A" }}</td>
+            <td>{{ compare[1].num_analysts or "N/A" }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>
