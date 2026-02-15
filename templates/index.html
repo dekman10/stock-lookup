@@ -109,11 +109,18 @@
       padding-top: 1rem;
       border-bottom: 1px solid #0f3460;
     }
+    .chart-container {
+      margin-top: 1rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid #0f3460;
+    }
+    .chart-container canvas { width: 100% !important; max-height: 200px; }
     @media (max-width: 500px) {
       .info-grid { grid-template-columns: 1fr; }
       .forms { flex-direction: column; }
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -208,7 +215,36 @@
       {% else %}
       <p style="color: #666;">No analyst ratings available.</p>
       {% endif %}
+
+      <div class="chart-container">
+        <canvas id="chart-single"></canvas>
+      </div>
     </div>
+    <script>
+      new Chart(document.getElementById('chart-single'), {
+        type: 'line',
+        data: {
+          labels: {{ stock.history_dates|safe }},
+          datasets: [{
+            label: '{{ stock.ticker }} Price',
+            data: {{ stock.history_prices|safe }},
+            borderColor: '#00bcd4',
+            backgroundColor: 'rgba(0,188,212,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#e0e0e0' } } },
+          scales: {
+            x: { ticks: { color: '#888' }, grid: { color: '#0f3460' } },
+            y: { ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#0f3460' } }
+          }
+        }
+      });
+    </script>
     {% endif %}
 
     {% if compare %}
@@ -281,7 +317,42 @@
           </tr>
         </tbody>
       </table>
+
+      <div class="chart-container">
+        <canvas id="chart-compare"></canvas>
+      </div>
     </div>
+    <script>
+      new Chart(document.getElementById('chart-compare'), {
+        type: 'line',
+        data: {
+          labels: {{ compare[0].history_dates|safe }},
+          datasets: [{
+            label: '{{ compare[0].ticker }}',
+            data: {{ compare[0].history_prices|safe }},
+            borderColor: '#00bcd4',
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            pointRadius: 2
+          }, {
+            label: '{{ compare[1].ticker }}',
+            data: {{ compare[1].history_prices|safe }},
+            borderColor: '#ffc107',
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            pointRadius: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#e0e0e0' } } },
+          scales: {
+            x: { ticks: { color: '#888' }, grid: { color: '#0f3460' } },
+            y: { ticks: { color: '#888', callback: v => '$' + v }, grid: { color: '#0f3460' } }
+          }
+        }
+      });
+    </script>
     {% endif %}
   </div>
 </body>

@@ -1,3 +1,4 @@
+import json
 import re
 import socket
 
@@ -59,6 +60,15 @@ def fetch_stock_data(ticker_symbol):
     if not name or (not current_price and not previous_close):
         return None, f"'{ticker_symbol.upper()}' is not a valid ticker symbol or has no market data."
 
+    # Fetch 1-month price history for chart
+    try:
+        hist = stock.history(period="1y")
+        history_dates = [d.strftime("%b %d") for d in hist.index]
+        history_prices = [round(p, 2) for p in hist["Close"]]
+    except Exception:
+        history_dates = []
+        history_prices = []
+
     data = {
         "name": name,
         "ticker": ticker_symbol.upper(),
@@ -77,6 +87,8 @@ def fetch_stock_data(ticker_symbol):
         "num_analysts": info.get("numberOfAnalystOpinions"),
         "current_price_fmt": format_price(current_price),
         "previous_close_fmt": format_price(previous_close),
+        "history_dates": json.dumps(history_dates),
+        "history_prices": json.dumps(history_prices),
     }
     return data, None
 
